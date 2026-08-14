@@ -28,7 +28,7 @@ export const Route = createFileRoute("/my-bookings")({
       },
     ],
   }),
-  component: MyBookings;
+  component: MyBookings,
 });
 
 type BookingRow = Awaited<ReturnType<typeof getBookingsByPhone>>[number];
