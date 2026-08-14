@@ -112,37 +112,26 @@ function BookPage() {
     }
     setSubmitting(true);
     try {
-      // Bookings are write-only for visitors (RLS blocks reads), so we mint the
-      // id here instead of asking Postgres to return the inserted row.
-      const bookingId = crypto.randomUUID();
-
-      const { error } = await supabase.from("bookings").insert({
-        id: bookingId,
-        customer_name: form.customer_name.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim() || null,
-        event_date: form.event_date,
-        baraat_time: form.baraat_time || null,
-        venue: form.venue.trim(),
-        city: form.city.trim(),
-        guest_count: form.guest_count ? Number(form.guest_count) : null,
-        notes: form.notes.trim() || null,
-        total_price: total,
+      // Bookings are created server-side so prices and status can't be forged.
+      const result = await submitBooking({
+        data: {
+          customer_name: form.customer_name.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim() || null,
+          event_date: form.event_date,
+          baraat_time: form.baraat_time || null,
+          venue: form.venue.trim(),
+          city: form.city.trim(),
+          guest_count: form.guest_count ? Number(form.guest_count) : null,
+          notes: form.notes.trim() || null,
+          items: Object.entries(selected).map(([vendorId, qty]) => ({
+            vendor_id: vendorId,
+            quantity: qty,
+          })),
+        },
       });
 
-      if (error) throw new Error(error.message);
-
-      const items = Object.entries(selected).map(([vendorId, qty]) => ({
-        booking_id: bookingId,
-        vendor_id: vendorId,
-        quantity: qty,
-        price: Number(vendors.find((v) => v.id === vendorId)?.price ?? 0) * qty,
-      }));
-
-      const { error: itemsError } = await supabase.from("booking_items").insert(items);
-      if (itemsError) throw new Error(itemsError.message);
-
-      setConfirmed({ id: bookingId, total });
+      setConfirmed({ id: result.id, total: result.total });
       setSelected({});
       setForm(emptyForm);
       toast.success("Booking request sent!");
