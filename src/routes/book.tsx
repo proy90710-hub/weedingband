@@ -142,7 +142,7 @@ function BookPage() {
       const { error: itemsError } = await supabase.from("booking_items").insert(items);
       if (itemsError) throw new Error(itemsError.message);
 
-      setConfirmed({ id: booking.id, total });
+      setConfirmed({ id: bookingId, total });
       setSelected({});
       setForm(emptyForm);
       toast.success("Booking request sent!");
