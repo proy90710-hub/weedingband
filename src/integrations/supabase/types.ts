@@ -14,7 +14,179 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      booking_items: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          price: number
+          quantity: number
+          vendor_id: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          price?: number
+          quantity?: number
+          vendor_id: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          price?: number
+          quantity?: number
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_items_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_items_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          baraat_time: string | null
+          city: string
+          created_at: string
+          customer_name: string
+          email: string | null
+          event_date: string
+          guest_count: number | null
+          id: string
+          notes: string | null
+          phone: string
+          status: string
+          total_price: number
+          venue: string
+        }
+        Insert: {
+          baraat_time?: string | null
+          city: string
+          created_at?: string
+          customer_name: string
+          email?: string | null
+          event_date: string
+          guest_count?: number | null
+          id?: string
+          notes?: string | null
+          phone: string
+          status?: string
+          total_price?: number
+          venue: string
+        }
+        Update: {
+          baraat_time?: string | null
+          city?: string
+          created_at?: string
+          customer_name?: string
+          email?: string | null
+          event_date?: string
+          guest_count?: number | null
+          id?: string
+          notes?: string | null
+          phone?: string
+          status?: string
+          total_price?: number
+          venue?: string
+        }
+        Relationships: []
+      }
+      service_categories: {
+        Row: {
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      vendors: {
+        Row: {
+          active: boolean
+          category_id: string
+          city: string
+          created_at: string
+          description: string
+          featured: boolean
+          id: string
+          image_url: string | null
+          members: number
+          name: string
+          price: number
+          rating: number
+        }
+        Insert: {
+          active?: boolean
+          category_id: string
+          city: string
+          created_at?: string
+          description?: string
+          featured?: boolean
+          id?: string
+          image_url?: string | null
+          members?: number
+          name: string
+          price?: number
+          rating?: number
+        }
+        Update: {
+          active?: boolean
+          category_id?: string
+          city?: string
+          created_at?: string
+          description?: string
+          featured?: boolean
+          id?: string
+          image_url?: string | null
+          members?: number
+          name?: string
+          price?: number
+          rating?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendors_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "service_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
