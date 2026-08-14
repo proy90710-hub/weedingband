@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { createBooking } from "@/lib/booking.functions";
 import { categoriesQuery, vendorsQuery } from "@/lib/catalog";
 import { formatINR } from "@/lib/format";
 import { cn } from "@/lib/utils";
