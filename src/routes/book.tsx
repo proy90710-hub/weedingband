@@ -65,6 +65,7 @@ const emptyForm: Form = {
 };
 
 function BookPage() {
+  const submitBooking = useServerFn(createBooking);
   const { vendor: preselected } = Route.useSearch();
   const { data: categories = [] } = useQuery(categoriesQuery);
   const { data: vendors = [] } = useQuery(vendorsQuery);
