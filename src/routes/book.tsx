@@ -112,27 +112,28 @@ function BookPage() {
     }
     setSubmitting(true);
     try {
-      const { data: booking, error } = await supabase
-        .from("bookings")
-        .insert({
-          customer_name: form.customer_name.trim(),
-          phone: form.phone.trim(),
-          email: form.email.trim() || null,
-          event_date: form.event_date,
-          baraat_time: form.baraat_time || null,
-          venue: form.venue.trim(),
-          city: form.city.trim(),
-          guest_count: form.guest_count ? Number(form.guest_count) : null,
-          notes: form.notes.trim() || null,
-          total_price: total,
-        })
-        .select("id")
-        .single();
+      // Bookings are write-only for visitors (RLS blocks reads), so we mint the
+      // id here instead of asking Postgres to return the inserted row.
+      const bookingId = crypto.randomUUID();
 
-      if (error || !booking) throw new Error(error?.message ?? "Booking failed");
+      const { error } = await supabase.from("bookings").insert({
+        id: bookingId,
+        customer_name: form.customer_name.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim() || null,
+        event_date: form.event_date,
+        baraat_time: form.baraat_time || null,
+        venue: form.venue.trim(),
+        city: form.city.trim(),
+        guest_count: form.guest_count ? Number(form.guest_count) : null,
+        notes: form.notes.trim() || null,
+        total_price: total,
+      });
+
+      if (error) throw new Error(error.message);
 
       const items = Object.entries(selected).map(([vendorId, qty]) => ({
-        booking_id: booking.id,
+        booking_id: bookingId,
         vendor_id: vendorId,
         quantity: qty,
         price: Number(vendors.find((v) => v.id === vendorId)?.price ?? 0) * qty,
