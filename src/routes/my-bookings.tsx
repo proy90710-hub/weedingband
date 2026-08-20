@@ -145,6 +145,25 @@ function MyBookings() {
                 </span>
               </div>
 
+              <dl className="mt-4 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                <div className="flex justify-between gap-3 sm:block">
+                  <dt className="text-muted-foreground">Phone</dt>
+                  <dd>{b.phone}</dd>
+                </div>
+                <div className="flex justify-between gap-3 sm:block">
+                  <dt className="text-muted-foreground">Email</dt>
+                  <dd>{b.email || "—"}</dd>
+                </div>
+                <div className="flex justify-between gap-3 sm:block">
+                  <dt className="text-muted-foreground">Baraatis</dt>
+                  <dd>{b.guest_count ?? "—"}</dd>
+                </div>
+                <div className="flex justify-between gap-3 sm:block">
+                  <dt className="text-muted-foreground">Booking ID</dt>
+                  <dd className="font-mono text-xs break-all">{b.id}</dd>
+                </div>
+              </dl>
+
               <ul className="mt-4 space-y-1.5 text-sm">
                 {b.booking_items?.map((item, i) => (
                   <li key={i} className="flex justify-between gap-3">
@@ -174,8 +193,53 @@ function MyBookings() {
                   {formatINR(Number(b.total_price))}
                 </span>
               </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {b.status !== "cancelled" && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingId(editingId === b.id ? null : b.id)}
+                    >
+                      <Pencil className="mr-2 size-3.5" />
+                      {editingId === b.id ? "Close editor" : "Edit booking"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={busyId === b.id}
+                      onClick={() => onCancelBooking(b.id)}
+                    >
+                      <XCircle className="mr-2 size-3.5" />
+                      Cancel booking
+                    </Button>
+                  </>
+                )}
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={busyId === b.id}
+                  onClick={() => onDeleteBooking(b.id)}
+                >
+                  <Trash2 className="mr-2 size-3.5" />
+                  Delete
+                </Button>
+              </div>
+
+              {editingId === b.id && (
+                <BookingEditor
+                  booking={b}
+                  onCancel={() => setEditingId(null)}
+                  onSaved={async () => {
+                    setEditingId(null);
+                    await refresh(phone);
+                  }}
+                />
+              )}
             </article>
           ))}
+
         </div>
       </main>
 
