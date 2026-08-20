@@ -98,7 +98,7 @@ export const getBookingsByPhone = createServerFn({ method: "POST" })
     const { data: bookings, error } = await supabaseAdmin
       .from("bookings")
       .select(
-        "id, customer_name, phone, event_date, baraat_time, venue, city, guest_count, notes, total_price, status, created_at, booking_items(quantity, price, vendors(name, city))",
+        "id, customer_name, phone, email, event_date, baraat_time, venue, city, guest_count, notes, total_price, status, created_at, booking_items(vendor_id, quantity, price, vendors(name, city))",
       )
       .eq("phone", data.phone.trim())
       .order("created_at", { ascending: false })
@@ -107,3 +107,125 @@ export const getBookingsByPhone = createServerFn({ method: "POST" })
     if (error) throw new Error("Could not load your bookings. Please try again.");
     return bookings ?? [];
   });
+
+const updateBookingSchema = createBookingSchema.extend({
+  id: z.string().uuid(),
+});
+
+async function assertOwner(id: string, phone: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: existing, error } = await supabaseAdmin
+    .from("bookings")
+    .select("id, phone, status")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw new Error("Could not load this booking.");
+  if (!existing || existing.phone !== phone.trim()) {
+    throw new Error("Booking not found for this phone number.");
+  }
+  if (existing.status === "cancelled") {
+    throw new Error("This booking is already cancelled.");
+  }
+  return existing;
+}
+
+/**
+ * Update an existing booking. Ownership is proven by the phone number the
+ * booking was created with; prices and total are recomputed server-side.
+ */
+export const updateBooking = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => updateBookingSchema.parse(data))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await assertOwner(data.id, data.phone);
+
+    const vendorIds = [...new Set(data.items.map((i) => i.vendor_id))];
+    const { data: vendors, error: vendorError } = await supabaseAdmin
+      .from("vendors")
+      .select("id, price")
+      .eq("active", true)
+      .in("id", vendorIds);
+
+    if (vendorError) throw new Error("Could not verify the selected services.");
+    if (!vendors || vendors.length !== vendorIds.length) {
+      throw new Error("One or more selected services are unavailable.");
+    }
+
+    const priceById = new Map(vendors.map((v) => [v.id, Number(v.price)]));
+    const items = data.items.map((i) => ({
+      booking_id: data.id,
+      vendor_id: i.vendor_id,
+      quantity: i.quantity,
+      price: (priceById.get(i.vendor_id) ?? 0) * i.quantity,
+    }));
+    const total = items.reduce((sum, i) => sum + i.price, 0);
+
+    const { error: updateError } = await supabaseAdmin
+      .from("bookings")
+      .update({
+        customer_name: data.customer_name,
+        email: data.email || null,
+        event_date: data.event_date,
+        baraat_time: data.baraat_time || null,
+        venue: data.venue,
+        city: data.city,
+        guest_count: data.guest_count ?? null,
+        notes: data.notes || null,
+        total_price: total,
+      })
+      .eq("id", data.id);
+
+    if (updateError) throw new Error("Could not update your booking. Please try again.");
+
+    await supabaseAdmin.from("booking_items").delete().eq("booking_id", data.id);
+    const { error: itemsError } = await supabaseAdmin.from("booking_items").insert(items);
+    if (itemsError) throw new Error("Could not update the selected services.");
+
+    return { id: data.id, total };
+  });
+
+const ownerSchema = z.object({
+  id: z.string().uuid(),
+  phone: z.string().trim().min(6).max(20),
+});
+
+/** Cancel a booking (keeps the record, marks it cancelled). */
+export const cancelBooking = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => ownerSchema.parse(data))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await assertOwner(data.id, data.phone);
+
+    const { error } = await supabaseAdmin
+      .from("bookings")
+      .update({ status: "cancelled" })
+      .eq("id", data.id);
+
+    if (error) throw new Error("Could not cancel this booking.");
+    return { id: data.id };
+  });
+
+/** Permanently delete a booking and its items. */
+export const deleteBooking = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => ownerSchema.parse(data))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: existing, error: loadError } = await supabaseAdmin
+      .from("bookings")
+      .select("id, phone")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    if (loadError) throw new Error("Could not load this booking.");
+    if (!existing || existing.phone !== data.phone.trim()) {
+      throw new Error("Booking not found for this phone number.");
+    }
+
+    await supabaseAdmin.from("booking_items").delete().eq("booking_id", data.id);
+    const { error } = await supabaseAdmin.from("bookings").delete().eq("id", data.id);
+    if (error) throw new Error("Could not delete this booking.");
+    return { id: data.id };
+  });
+
