@@ -1,15 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Search } from "lucide-react";
+import { Pencil, Search, Trash2, XCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { BookingEditor } from "@/components/BookingEditor";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getBookingsByPhone } from "@/lib/booking.functions";
+import { cancelBooking, deleteBooking, getBookingsByPhone } from "@/lib/booking.functions";
 import { formatDate, formatINR } from "@/lib/format";
 
 export const Route = createFileRoute("/my-bookings")({
@@ -19,12 +20,12 @@ export const Route = createFileRoute("/my-bookings")({
       {
         name: "description",
         content:
-          "Enter the phone number you booked with to see your baraat booking history, selected teams, status and total amount.",
+          "Enter the phone number you booked with to see your baraat booking history, edit details, change teams, cancel or delete a booking.",
       },
       { property: "og:title", content: "My Baraat Bookings — ShaadiBaaja" },
       {
         property: "og:description",
-        content: "Look up your baraat bookings using your phone number.",
+        content: "Look up, edit, cancel or delete your baraat bookings with your phone number.",
       },
     ],
   }),
@@ -35,9 +36,18 @@ type BookingRow = Awaited<ReturnType<typeof getBookingsByPhone>>[number];
 
 function MyBookings() {
   const lookup = useServerFn(getBookingsByPhone);
+  const cancelFn = useServerFn(cancelBooking);
+  const deleteFn = useServerFn(deleteBooking);
   const [phone, setPhone] = useState("");
   const [rows, setRows] = useState<BookingRow[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  async function refresh(num: string) {
+    const result = await lookup({ data: { phone: num.trim() } });
+    setRows(result);
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,14 +57,43 @@ function MyBookings() {
     }
     setLoading(true);
     try {
-      const result = await lookup({ data: { phone: phone.trim() } });
-      setRows(result);
+      await refresh(phone);
+      setEditingId(null);
     } catch {
       toast.error("Could not fetch bookings. Try again.");
     } finally {
       setLoading(false);
     }
   }
+
+  async function onCancelBooking(id: string) {
+    if (!confirm("Cancel this booking?")) return;
+    setBusyId(id);
+    try {
+      await cancelFn({ data: { id, phone: phone.trim() } });
+      toast.success("Booking cancelled.");
+      await refresh(phone);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not cancel booking");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function onDeleteBooking(id: string) {
+    if (!confirm("Delete this booking permanently?")) return;
+    setBusyId(id);
+    try {
+      await deleteFn({ data: { id, phone: phone.trim() } });
+      toast.success("Booking deleted.");
+      await refresh(phone);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not delete booking");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
 
   return (
     <div className="min-h-screen">
