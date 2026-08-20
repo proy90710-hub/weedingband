@@ -86,7 +86,7 @@ export function BookingEditor({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (Object.keys(selected).length === 0) {
-      toast.error("Kam se kam ek service select karein.");
+      toast.error("Please select at least one service.");
       return;
     }
     setSaving(true);
