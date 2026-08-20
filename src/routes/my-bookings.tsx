@@ -110,10 +110,12 @@ function MyBookings() {
             <Label htmlFor="phone">Phone number</Label>
             <Input
               id="phone"
-              inputMode="tel"
+              inputMode="numeric"
+              maxLength={10}
+              pattern="\d{10}"
               placeholder="9876543210"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
               className="mt-1.5"
             />
           </div>
