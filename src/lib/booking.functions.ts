@@ -192,7 +192,7 @@ export const updateBooking = createServerFn({ method: "POST" })
 
 const ownerSchema = z.object({
   id: z.string().uuid(),
-  phone: z.string().trim().min(6).max(20),
+  phone: phoneField,
 });
 
 /** Cancel a booking (keeps the record, marks it cancelled). */
