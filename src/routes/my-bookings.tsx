@@ -51,8 +51,8 @@ function MyBookings() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (phone.trim().length < 6) {
-      toast.error("Please enter a valid phone number.");
+    if (!/^\d{10}$/.test(phone.trim())) {
+      toast.error("Your number is wrong, please correct 10 digits number");
       return;
     }
     setLoading(true);
