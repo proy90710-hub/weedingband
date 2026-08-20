@@ -1,11 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const phoneSchema = z.object({ phone: z.string().min(6).max(20) });
+const phoneField = z
+  .string()
+  .trim()
+  .regex(/^\d{10}$/, "Your number is wrong, please correct 10 digits number");
+
+const phoneSchema = z.object({ phone: phoneField });
 
 const createBookingSchema = z.object({
   customer_name: z.string().trim().min(2).max(100),
-  phone: z.string().trim().min(6).max(20),
+  phone: phoneField,
   email: z.string().trim().email().max(200).nullable().optional(),
   event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   baraat_time: z.string().trim().max(20).nullable().optional(),
