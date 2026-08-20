@@ -109,7 +109,11 @@ function BookPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (Object.keys(selected).length === 0) {
-      toast.error("Kam se kam ek service select karein.");
+      toast.error("Please select at least one service.");
+      return;
+    }
+    if (!/^\d{10}$/.test(form.phone.trim())) {
+      toast.error("Your number is wrong, please correct 10 digits number");
       return;
     }
     setSubmitting(true);
