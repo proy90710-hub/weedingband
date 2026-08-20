@@ -51,8 +51,8 @@ function MyBookings() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (phone.trim().length < 6) {
-      toast.error("Please enter a valid phone number.");
+    if (!/^\d{10}$/.test(phone.trim())) {
+      toast.error("Your number is wrong, please correct 10 digits number");
       return;
     }
     setLoading(true);
@@ -110,10 +110,12 @@ function MyBookings() {
             <Label htmlFor="phone">Phone number</Label>
             <Input
               id="phone"
-              inputMode="tel"
+              inputMode="numeric"
+              maxLength={10}
+              pattern="\d{10}"
               placeholder="9876543210"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
               className="mt-1.5"
             />
           </div>

@@ -109,7 +109,11 @@ function BookPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (Object.keys(selected).length === 0) {
-      toast.error("Kam se kam ek service select karein.");
+      toast.error("Please select at least one service.");
+      return;
+    }
+    if (!/^\d{10}$/.test(form.phone.trim())) {
+      toast.error("Your number is wrong, please correct 10 digits number");
       return;
     }
     setSubmitting(true);
@@ -275,14 +279,19 @@ function BookPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Phone number *</Label>
+                  <Label htmlFor="phone">Phone number (10 digits) *</Label>
                   <Input
                     id="phone"
                     required
-                    inputMode="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                    pattern="\d{10}"
+                    title="Your number is wrong, please correct 10 digits number"
                     placeholder="9876543210"
                     value={form.phone}
-                    onChange={update("phone")}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, phone: e.target.value.replace(/\D/g, "").slice(0, 10) }))
+                    }
                     className="mt-1.5"
                   />
                 </div>
